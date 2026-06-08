@@ -1,4 +1,4 @@
-var lang="nl-NL",listening=false,rec=null,finalText="",interimText="",currentDraft=null;
+var lang="nl-NL",listening=false,rec=null,currentDraft=null;
 
 function go(id){
   var s=document.querySelectorAll(".screen");
@@ -31,7 +31,7 @@ document.getElementById("btn-save").addEventListener("click",function(){
   showToast("Saved!");setTimeout(function(){go("main");},800);
 });
 document.getElementById("start-over").addEventListener("click",function(){
-  currentDraft=null;finalText="";interimText="";
+  currentDraft=null;
   document.getElementById("tbox").innerHTML='<span class="placeholder" id="ph">Your words will appear here...</span>';
   go("main");
 });
@@ -48,32 +48,34 @@ function startMic(){
   if(!key){showToast("Add API key in Settings");go("settings");return;}
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){showToast("Speech not supported");return;}
-  finalText="";interimText="";listening=true;
+  listening=true;
   document.getElementById("mic-btn").classList.add("on");
   document.getElementById("mic-icon").textContent="⏹";
   document.getElementById("status-label").textContent="Listening...";
   document.getElementById("mic-hint").textContent="TAP TO STOP";
   var ph=document.getElementById("ph");if(ph)ph.remove();
-  var box=document.getElementById("tbox");box.innerHTML="";box.classList.add("on");
+  var box=document.getElementById("tbox");
+  box.innerHTML="";box.classList.add("on");
+
   function startRec(){
     if(!listening)return;
     rec=new SR();
-    rec.lang=lang;rec.continuous=false;rec.interimResults=true;
+    rec.lang=lang;
+    rec.continuous=false;
+    rec.interimResults=true;
     rec.onresult=function(e){
-      var interim="";
-      for(var i=e.resultIndex;i<e.results.length;i++){
-        if(e.results[i].isFinal){finalText+=e.results[i][0].transcript+" ";}
-        else{interim+=e.results[i][0].transcript;}
+      var full="";
+      for(var i=0;i<e.results.length;i++){
+        full+=e.results[i][0].transcript+" ";
       }
-      interimText=interim;
-      box.textContent=finalText+interim;
+      box.textContent=full.trim();
     };
     rec.onerror=function(e){
-      if(e.error==="no-speech"&&listening){setTimeout(startRec,100);return;}
+      if(e.error==="no-speech"&&listening){setTimeout(startRec,200);return;}
       stopMic();showToast("Mic error: "+e.error);
     };
     rec.onend=function(){
-      if(listening){setTimeout(startRec,100);}
+      if(listening){setTimeout(startRec,200);}
     };
     try{rec.start();}catch(e){}
   }
@@ -82,13 +84,13 @@ function startMic(){
 
 function stopMic(){
   listening=false;
-  if(rec){try{rec.stop();}catch(e){}rec=null;}
+  if(rec){try{rec.abort();}catch(e){}rec=null;}
   document.getElementById("mic-btn").classList.remove("on");
   document.getElementById("tbox").classList.remove("on");
   document.getElementById("status-label").textContent="Tap to speak";
   document.getElementById("mic-hint").textContent="TAP TO RECORD";
-  // Safari fix: use interim text as fallback if finalText is empty
-  var t=(finalText+interimText).trim();
+  // Read directly from the box - works regardless of isFinal in Safari
+  var t=document.getElementById("tbox").textContent.trim();
   if(t.length>3){
     makeDraft(t);
   } else {
