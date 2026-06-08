@@ -1,5 +1,12 @@
 var lang="nl-NL",listening=false,rec=null,finalText="",currentDraft=null;
 
+function dbg(msg){
+  var d=document.getElementById("debug");
+  if(!d){d=document.createElement("div");d.id="debug";d.style.cssText="position:fixed;top:0;left:0;right:0;background:#222;color:#0f0;font-size:11px;padding:6px;z-index:9999;max-height:120px;overflow-y:auto;font-family:monospace;";document.body.appendChild(d);}
+  d.innerHTML+="<div>"+new Date().toISOString().substr(11,8)+" "+msg+"</div>";
+  d.scrollTop=d.scrollHeight;
+}
+
 function go(id){
   var s=document.querySelectorAll(".screen");
   for(var i=0;i<s.length;i++) s[i].classList.remove("active");
@@ -9,8 +16,7 @@ function go(id){
 
 function showToast(msg){
   var t=document.getElementById("toast");
-  t.textContent=msg;
-  t.classList.add("show");
+  t.textContent=msg;t.classList.add("show");
   setTimeout(function(){t.classList.remove("show");},2000);
 }
 
@@ -29,8 +35,7 @@ document.getElementById("btn-save").addEventListener("click",function(){
   localStorage.setItem("dw_key",document.getElementById("inp-key").value.trim());
   localStorage.setItem("dw_name",document.getElementById("inp-name").value.trim());
   localStorage.setItem("dw_style",document.getElementById("inp-style").value.trim());
-  showToast("Saved!");
-  setTimeout(function(){go("main");},800);
+  showToast("Saved!");setTimeout(function(){go("main");},800);
 });
 document.getElementById("start-over").addEventListener("click",function(){
   currentDraft=null;finalText="";
@@ -47,26 +52,24 @@ document.getElementById("mic-btn").addEventListener("click",function(){
 
 function startMic(){
   var key=(localStorage.getItem("dw_key")||localStorage.getItem("dw_api_key"));
+  dbg("startMic key="+(key?"yes":"NO"));
   if(!key){showToast("Add API key in Settings");go("settings");return;}
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  dbg("SR="+(SR?"found":"NOT FOUND"));
   if(!SR){showToast("Speech not supported");return;}
-
-  finalText="";
-  listening=true;
+  finalText="";listening=true;
   document.getElementById("mic-btn").classList.add("on");
   document.getElementById("mic-icon").textContent="⏹";
   document.getElementById("status-label").textContent="Listening...";
   document.getElementById("mic-hint").textContent="TAP TO STOP";
   var ph=document.getElementById("ph");if(ph)ph.remove();
-  var box=document.getElementById("tbox");
-  box.innerHTML="";box.classList.add("on");
-
+  var box=document.getElementById("tbox");box.innerHTML="";box.classList.add("on");
   function startRec(){
     if(!listening)return;
     rec=new SR();
-    rec.lang=lang;
-    rec.continuous=false;
-    rec.interimResults=true;
+    rec.lang=lang;rec.continuous=false;rec.interimResults=true;
+    dbg("rec.start lang="+lang);
+    rec.onstart=function(){dbg("onstart OK");};
     rec.onresult=function(e){
       var interim="";
       for(var i=e.resultIndex;i<e.results.length;i++){
@@ -74,20 +77,25 @@ function startMic(){
         else{interim+=e.results[i][0].transcript;}
       }
       box.textContent=finalText+interim;
+      dbg("result: "+box.textContent.substring(0,30));
     };
     rec.onerror=function(e){
+      dbg("ERROR: "+e.error);
       if(e.error==="no-speech"&&listening){setTimeout(startRec,100);return;}
       stopMic();showToast("Mic error: "+e.error);
     };
     rec.onend=function(){
+      dbg("onend listening="+listening);
       if(listening){setTimeout(startRec,100);}
     };
-    try{rec.start();}catch(e){}
+    try{rec.start();dbg("start() called");}
+    catch(e){dbg("start() EXCEPTION: "+e.message);}
   }
   startRec();
 }
 
 function stopMic(){
+  dbg("stopMic finalText="+finalText.substring(0,30));
   listening=false;
   if(rec){try{rec.stop();}catch(e){}rec=null;}
   document.getElementById("mic-btn").classList.remove("on");
@@ -95,15 +103,12 @@ function stopMic(){
   document.getElementById("status-label").textContent="Tap to speak";
   document.getElementById("mic-hint").textContent="TAP TO RECORD";
   var t=finalText.trim();
-  if(t.length>3){
-    makeDraft(t);
-  } else {
-    document.getElementById("mic-icon").textContent="🎙";
-    document.getElementById("tbox").innerHTML='<span class="placeholder" id="ph">Your words will appear here...</span>';
-  }
+  if(t.length>3){makeDraft(t);}
+  else{document.getElementById("mic-icon").textContent="🎙";document.getElementById("tbox").innerHTML='<span class="placeholder" id="ph">Your words will appear here...</span>';}
 }
 
 function makeDraft(text){
+  dbg("makeDraft: "+text.substring(0,30));
   var key=(localStorage.getItem("dw_key")||localStorage.getItem("dw_api_key"));
   var name=(localStorage.getItem("dw_name")||localStorage.getItem("dw_user_name"))||"";
   var style=localStorage.getItem("dw_style")||"";
@@ -115,13 +120,15 @@ function makeDraft(text){
   if(name)sys+=" The user is: "+name+".";
   if(style)sys+=" Match this writing style:\n"+style;
   sys+="\nDetect if the user spoke Dutch or English and write the email in that language. Return ONLY a raw JSON object with no markdown: {\"subject\":\"...\",\"body\":\"...\"}";
+  dbg("fetching API...");
   fetch("https://api.anthropic.com/v1/messages",{
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
     body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1000,system:sys,messages:[{role:"user",content:text}]})
   })
-  .then(function(r){return r.json();})
+  .then(function(r){dbg("status="+r.status);return r.json();})
   .then(function(data){
+    dbg("data="+JSON.stringify(data).substring(0,80));
     if(data.error)throw new Error(data.error.message+" ("+data.error.type+")");
     var raw=data.content[0].text.trim().replace(/```json|```/g,"").trim();
     var d=JSON.parse(raw);
@@ -131,6 +138,7 @@ function makeDraft(text){
     go("draft");
   })
   .catch(function(err){
+    dbg("FETCH ERR: "+err.message);
     document.getElementById("tbox").innerHTML='<div class="err">'+err.message+'</div>';
   })
   .finally(function(){
