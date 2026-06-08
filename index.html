@@ -1,213 +1,208 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="DraftWhile" />
-  <meta name="theme-color" content="#0a0a0f" />
-  <title>DraftWhile</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
-  <style>
-    :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--accent:#e8ff47;--accent2:#47ffe8;--text:#f0f0f8;--muted:#6b6b80;--radius:20px;}
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-    html,body{height:100%;background:var(--bg);color:var(--text);font-family:"Syne",sans-serif;overflow:hidden;}
-    .app{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top,20px) 0 env(safe-area-inset-bottom,0) 0;}
-    .screen{display:none;flex-direction:column;height:100%;}
-    .screen.active{display:flex;}
-    .header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 12px;}
-    .logo{font-size:20px;font-weight:800;letter-spacing:-0.5px;}
-    .logo span{color:var(--accent);}
-    .lang-toggle{display:flex;background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.06);}
-    .lang-btn{padding:6px 14px;font-family:"DM Mono",monospace;font-size:12px;color:var(--muted);background:transparent;border:none;cursor:pointer;}
-    .lang-btn.active{background:var(--accent);color:#0a0a0f;}
-    .settings-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;font-size:20px;}
-    #main{justify-content:space-between;}
-    .status-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;gap:24px;}
-    .status-label{font-family:"DM Mono",monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
-    .transcript-box{width:100%;min-height:80px;max-height:160px;background:var(--surface);border-radius:var(--radius);padding:18px 20px;font-size:15px;line-height:1.6;color:var(--text);overflow-y:auto;border:1px solid rgba(255,255,255,0.06);transition:border-color 0.3s;}
-    .transcript-box.listening{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
-    .transcript-placeholder{color:var(--muted);font-size:14px;}
-    .mic-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding-bottom:40px;}
-    .mic-btn{width:96px;height:96px;border-radius:50%;background:var(--surface2);border:2px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;-webkit-user-select:none;}
-    .mic-btn.listening{background:var(--accent);border-color:var(--accent);animation:pulse 1.5s ease-in-out infinite;}
-    .mic-btn.loading{border-color:var(--accent2);}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,255,71,0.4);}50%{box-shadow:0 0 0 20px rgba(232,255,71,0);}}
-    .mic-icon{font-size:36px;}
-    .mic-btn.listening .mic-icon{color:#0a0a0f;}
-    .mic-hint{font-family:"DM Mono",monospace;font-size:11px;color:var(--muted);letter-spacing:1px;}
-    #draft{overflow:hidden;}
-    .draft-content{flex:1;overflow-y:auto;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px;}
-    .draft-field{background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(255,255,255,0.06);}
-    .draft-field-label{font-family:"DM Mono",monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;}
-    .draft-field-value{font-size:15px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word;}
-    #draft-subject .draft-field-value{font-weight:600;font-size:16px;}
-    .draft-actions{padding:16px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;}
-    .btn-primary{width:100%;padding:18px;background:var(--accent);color:#0a0a0f;border:none;border-radius:var(--radius);font-family:"Syne",sans-serif;font-size:16px;font-weight:700;cursor:pointer;}
-    .btn-secondary{width:100%;padding:16px;background:var(--surface2);color:var(--muted);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);font-family:"Syne",sans-serif;font-size:14px;font-weight:600;cursor:pointer;}
-    #settings{overflow:hidden;}
-    .settings-content{flex:1;overflow-y:auto;padding:0 24px;display:flex;flex-direction:column;gap:20px;}
-    .settings-section-title{font-family:"DM Mono",monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
-    .settings-card{background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:12px;}
-    .settings-label{font-size:13px;color:var(--muted);line-height:1.5;}
-    .settings-label a{color:var(--accent);text-decoration:none;}
-    .settings-input{width:100%;background:var(--surface2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 16px;color:var(--text);font-family:"DM Mono",monospace;font-size:13px;outline:none;}
-    .settings-input:focus{border-color:var(--accent);}
-    .settings-input::placeholder{color:var(--muted);}
-    .settings-textarea{resize:vertical;min-height:100px;line-height:1.5;}
-    .settings-save{padding:14px;background:var(--accent);color:#0a0a0f;border:none;border-radius:12px;font-family:"Syne",sans-serif;font-size:15px;font-weight:700;cursor:pointer;}
-    .back-btn{background:none;border:none;color:var(--accent);font-family:"Syne",sans-serif;font-size:15px;font-weight:600;cursor:pointer;padding:0;}
-    .toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);color:var(--text);padding:12px 24px;border-radius:100px;font-size:13px;font-family:"DM Mono",monospace;opacity:0;transition:all 0.3s ease;pointer-events:none;border:1px solid rgba(255,255,255,0.08);z-index:100;}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-    .error-msg{background:rgba(255,71,71,0.1);border:1px solid rgba(255,71,71,0.3);border-radius:12px;padding:14px 16px;font-size:13px;color:#ff8080;line-height:1.5;}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DraftWhile">
+<meta name="theme-color" content="#0a0a0f">
+<title>DraftWhile</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c28;--accent:#e8ff47;--accent2:#47ffe8;--text:#f0f0f8;--muted:#6b6b80;--radius:20px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top,20px) 0 env(safe-area-inset-bottom,0) 0}
+.screen{display:none;flex-direction:column;height:100%}
+.screen.active{display:flex}
+.header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 12px}
+.logo{font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.logo span{color:var(--accent)}
+.lang-toggle{display:flex;background:var(--surface2);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
+.lang-btn{padding:6px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);background:transparent;border:none;cursor:pointer}
+.lang-btn.active{background:var(--accent);color:#0a0a0f}
+.icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;font-size:20px}
+#main{justify-content:space-between}
+.status-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;gap:24px}
+.status-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.transcript-box{width:100%;min-height:80px;max-height:160px;background:var(--surface);border-radius:var(--radius);padding:18px 20px;font-size:15px;line-height:1.6;color:var(--text);overflow-y:auto;border:1px solid rgba(255,255,255,0.06);transition:border-color 0.3s}
+.transcript-box.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.placeholder{color:var(--muted);font-size:14px}
+.mic-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding-bottom:40px}
+.mic-btn{width:96px;height:96px;border-radius:50%;background:var(--surface2);border:2px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;-webkit-user-select:none;user-select:none}
+.mic-btn.on{background:var(--accent);border-color:var(--accent);animation:pulse 1.5s ease-in-out infinite}
+.mic-btn.busy{border-color:var(--accent2)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,255,71,0.4)}50%{box-shadow:0 0 0 20px rgba(232,255,71,0)}}
+.mic-icon{font-size:36px}
+.mic-btn.on .mic-icon{color:#0a0a0f}
+.mic-hint{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px}
+#draft{overflow:hidden}
+.draft-content{flex:1;overflow-y:auto;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px}
+.draft-field{background:var(--surface);border-radius:var(--radius);padding:18px 20px;border:1px solid rgba(255,255,255,0.06)}
+.field-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.field-value{font-size:15px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word}
+#subj-field .field-value{font-weight:600;font-size:16px}
+.draft-actions{padding:16px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.btn-primary{width:100%;padding:18px;background:var(--accent);color:#0a0a0f;border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer}
+.btn-secondary{width:100%;padding:16px;background:var(--surface2);color:var(--muted);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
+#settings{overflow:hidden}
+.settings-body{flex:1;overflow-y:auto;padding:0 24px;display:flex;flex-direction:column;gap:20px}
+.sec-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.card{background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:12px}
+.card-label{font-size:13px;color:var(--muted);line-height:1.5}
+.card-label a{color:var(--accent);text-decoration:none}
+.inp{width:100%;background:var(--surface2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 16px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none}
+.inp:focus{border-color:var(--accent)}
+.inp::placeholder{color:var(--muted)}
+textarea.inp{resize:vertical;min-height:100px;line-height:1.5}
+.btn-save{padding:14px;background:var(--accent);color:#0a0a0f;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer}
+.back-btn{background:none;border:none;color:var(--accent);font-family:'Syne',sans-serif;font-size:15px;font-weight:600;cursor:pointer;padding:0}
+.toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);color:var(--text);padding:12px 24px;border-radius:100px;font-size:13px;font-family:'DM Mono',monospace;opacity:0;transition:all 0.3s;pointer-events:none;border:1px solid rgba(255,255,255,0.08);z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.err{background:rgba(255,71,71,0.1);border:1px solid rgba(255,71,71,0.3);border-radius:12px;padding:14px 16px;font-size:13px;color:#ff8080;line-height:1.5}
+</style>
 </head>
 <body>
 <div class="app">
-  <div class="screen active" id="main">
-    <div class="header">
-      <div class="logo">Draft<span>While</span></div>
-      <div class="lang-toggle">
-        <button class="lang-btn active" data-lang="nl-NL" onclick="setLang('nl-NL',this)">NL</button>
-        <button class="lang-btn" data-lang="en-US" onclick="setLang('en-US',this)">EN</button>
-      </div>
-      <button class="settings-btn" onclick="showScreen('settings')">&#9881;</button>
+<div class="screen active" id="main">
+  <div class="header">
+    <div class="logo">Draft<span>While</span></div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-nl">NL</button>
+      <button class="lang-btn" id="btn-en">EN</button>
     </div>
-    <div class="status-area">
-      <div class="status-label" id="status-label">Tap to speak</div>
-      <div class="transcript-box" id="transcript-box">
-        <span class="transcript-placeholder" id="transcript-placeholder">Your words will appear here...</span>
-      </div>
+    <button class="icon-btn" id="open-settings">&#9881;</button>
+  </div>
+  <div class="status-area">
+    <div class="status-label" id="status-label">Tap to speak</div>
+    <div class="transcript-box" id="tbox"><span class="placeholder" id="ph">Your words will appear here...</span></div>
+  </div>
+  <div class="mic-wrap">
+    <button class="mic-btn" id="mic-btn"><span class="mic-icon" id="mic-icon">&#127899;</span></button>
+    <div class="mic-hint" id="mic-hint">TAP TO RECORD</div>
+  </div>
+</div>
+<div class="screen" id="draft">
+  <div class="header">
+    <div class="logo">Draft<span>While</span></div>
+    <button class="icon-btn" id="close-draft" style="font-size:16px">&#10005;</button>
+  </div>
+  <div class="draft-content">
+    <div class="draft-field" id="subj-field">
+      <div class="field-label">Subject</div>
+      <div class="field-value" id="subj-val"></div>
     </div>
-    <div class="mic-wrap">
-      <button class="mic-btn" id="mic-btn" onclick="toggleMic()">
-        <span class="mic-icon" id="mic-icon">&#127899;</span>
-      </button>
-      <div class="mic-hint" id="mic-hint">TAP TO RECORD</div>
+    <div class="draft-field">
+      <div class="field-label">Body</div>
+      <div class="field-value" id="body-val"></div>
     </div>
   </div>
-  <div class="screen" id="draft">
-    <div class="header">
-      <div class="logo">Draft<span>While</span></div>
-      <button class="settings-btn" onclick="showScreen('main')" style="font-size:16px;">&#10005;</button>
-    </div>
-    <div class="draft-content">
-      <div class="draft-field" id="draft-subject">
-        <div class="draft-field-label">Subject</div>
-        <div class="draft-field-value" id="subject-text"></div>
-      </div>
-      <div class="draft-field">
-        <div class="draft-field-label">Body</div>
-        <div class="draft-field-value" id="body-text"></div>
-      </div>
-    </div>
-    <div class="draft-actions">
-      <button class="btn-primary" onclick="openInMail()">&#128232; Open in Mail</button>
-      <button class="btn-secondary" onclick="startOver()">Start Over</button>
-    </div>
+  <div class="draft-actions">
+    <button class="btn-primary" id="open-mail">&#128232; Open in Mail</button>
+    <button class="btn-secondary" id="start-over">Start Over</button>
   </div>
-  <div class="screen" id="settings">
-    <div class="header">
-      <button class="back-btn" onclick="showScreen('main')">&#8592; Back</button>
-      <div class="logo">Draft<span>While</span></div>
-      <div style="width:60px"></div>
-    </div>
-    <div class="settings-content">
-      <div>
-        <div class="settings-section-title">API Key</div>
-        <div class="settings-card">
-          <div class="settings-label">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored only on your device.</div>
-          <input type="password" class="settings-input" id="api-key-input" placeholder="sk-ant-..." />
-        </div>
-      </div>
-      <div>
-        <div class="settings-section-title">Your Profile</div>
-        <div class="settings-card">
-          <div class="settings-label">Your name and role (helps Claude write in context)</div>
-          <input type="text" class="settings-input" id="user-name-input" placeholder="e.g. Dennis, Sales Director at Acme BV" />
-        </div>
-      </div>
-      <div>
-        <div class="settings-section-title">Writing Style</div>
-        <div class="settings-card">
-          <div class="settings-label">Paste 1-2 example emails. Claude will match your tone.</div>
-          <textarea class="settings-input settings-textarea" id="style-input" placeholder="Paste an example email here..."></textarea>
-        </div>
-      </div>
-      <button class="settings-save" onclick="saveSettings()">Save Settings</button>
-    </div>
+</div>
+<div class="screen" id="settings">
+  <div class="header">
+    <button class="back-btn" id="close-settings">&#8592; Back</button>
+    <div class="logo">Draft<span>While</span></div>
+    <div style="width:60px"></div>
   </div>
+  <div class="settings-body">
+    <div>
+      <div class="sec-title">API Key</div>
+      <div class="card">
+        <div class="card-label">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Stored only on your device.</div>
+        <input type="password" class="inp" id="inp-key" placeholder="sk-ant-...">
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">Your Profile</div>
+      <div class="card">
+        <div class="card-label">Your name and role (helps Claude write emails in context)</div>
+        <input type="text" class="inp" id="inp-name" placeholder="e.g. Dennis, Sales Director at Acme BV">
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">Writing Style</div>
+      <div class="card">
+        <div class="card-label">Paste 1-2 example emails. Claude will match your tone.</div>
+        <textarea class="inp" id="inp-style" placeholder="Paste an example email here..."></textarea>
+      </div>
+    </div>
+    <button class="btn-save" id="btn-save">Save Settings</button>
+  </div>
+</div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-  var lang="nl-NL",listening=false,rec=null,transcript="",draft=null;
-  function loadSettings(){document.getElementById("api-key-input").value=localStorage.getItem("dw_key")||"";document.getElementById("user-name-input").value=localStorage.getItem("dw_name")||"";document.getElementById("style-input").value=localStorage.getItem("dw_style")||"";}
-  function saveSettings(){localStorage.setItem("dw_key",document.getElementById("api-key-input").value.trim());localStorage.setItem("dw_name",document.getElementById("user-name-input").value.trim());localStorage.setItem("dw_style",document.getElementById("style-input").value.trim());showToast("Saved!");setTimeout(function(){showScreen("main");},800);}
-  function setLang(l,btn){lang=l;document.querySelectorAll(".lang-btn").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");}
-  function showScreen(id){document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});document.getElementById(id).classList.add("active");if(id==="settings")loadSettings();}
-  function showToast(msg,dur){dur=dur||2000;var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},dur);}
-  function toggleMic(){if(listening){stopMic();}else{startMic();}}
-  function startMic(){
-    var key=localStorage.getItem("dw_key");
-    if(!key){showToast("Add API key in Settings");showScreen("settings");return;}
-    if(!("webkitSpeechRecognition" in window)&&!("SpeechRecognition" in window)){showToast("Use Safari on iPhone");return;}
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    rec=new SR();rec.lang=lang;rec.continuous=true;rec.interimResults=true;
-    transcript="";
-    var box=document.getElementById("transcript-box");box.innerHTML="";box.classList.add("listening");
-    rec.onresult=function(e){var interim="";for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){transcript+=e.results[i][0].transcript+" ";}else{interim+=e.results[i][0].transcript;}}box.textContent=transcript+interim;};
-    rec.onerror=function(e){stopMic();showToast("Mic error: "+e.error);};
-    rec.onend=function(){if(listening)rec.start();};
-    rec.start();listening=true;
-    document.getElementById("mic-btn").classList.add("listening");
-    document.getElementById("mic-icon").textContent="⏹";
-    document.getElementById("status-label").textContent="Listening...";
-    document.getElementById("mic-hint").textContent="TAP TO STOP";
-    var ph=document.getElementById("transcript-placeholder");if(ph)ph.remove();
-  }
-  function stopMic(){
-    listening=false;if(rec){rec.stop();rec=null;}
-    document.getElementById("mic-btn").classList.remove("listening");
-    document.getElementById("transcript-box").classList.remove("listening");
-    document.getElementById("status-label").textContent="Tap to speak";
-    document.getElementById("mic-hint").textContent="TAP TO RECORD";
-    var t=transcript.trim();
-    if(t.length>3){generateDraft(t);}
-    else{document.getElementById("mic-icon").textContent="🎙";document.getElementById("transcript-box").innerHTML="<span class=\"transcript-placeholder\">Your words will appear here...</span>";}
-  }
-  function generateDraft(t){
-    var key=localStorage.getItem("dw_key");
-    var name=localStorage.getItem("dw_name")||"";
-    var style=localStorage.getItem("dw_style")||"";
-    var btn=document.getElementById("mic-btn");
-    btn.classList.add("loading");
-    document.getElementById("mic-icon").textContent="⏳";
-    document.getElementById("status-label").textContent="Drafting...";
-    var sys="You are a bilingual email assistant (Dutch/English)."+(name?" User: "+name+".":"")+(style?" Writing style:
-"+style:"")+" Detect language and write email in same language. Return ONLY valid JSON no markdown: {\"subject\":\"...\",\"body\":\"...\"}";
-    fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1000,system:sys,messages:[{role:"user",content:t}]})})
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data.error)throw new Error(data.error.message+" ("+data.error.type+")");
-      var raw=data.content[0].text.trim().replace(/```json|```/g,"").trim();
-      var d=JSON.parse(raw);
-      draft={subject:d.subject,body:d.body,transcript:t};
-      document.getElementById("subject-text").textContent=d.subject;
-      document.getElementById("body-text").textContent=d.body;
-      showScreen("draft");
-    })
-    .catch(function(err){
-      document.getElementById("transcript-box").innerHTML="<div class=\"error-msg\">"+err.message+"</div>";
-    })
-    .finally(function(){
-      btn.classList.remove("loading");
-      document.getElementById("mic-icon").textContent="🎙";
-      document.getElementById("status-label").textContent="Tap to speak";
-    });
-  }
-  function openInMail(){if(!draft)return;window.location.href="mailto:?subject="+encodeURIComponent(draft.subject)+"&body="+encodeURIComponent(draft.body);}
-  function startOver(){draft=null;transcript="";document.getElementById("transcript-box").innerHTML="<span class=\"transcript-placeholder\">Your words will appear here...</span>";showScreen("main");}
+var lang="nl-NL",listening=false,rec=null,finalText="",currentDraft=null;
+function go(id){var s=document.querySelectorAll(".screen");for(var i=0;i<s.length;i++)s[i].classList.remove("active");document.getElementById(id).classList.add("active");if(id==="settings")load();}
+function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2000);}
+function load(){document.getElementById("inp-key").value=localStorage.getItem("dw_key")||"";document.getElementById("inp-name").value=localStorage.getItem("dw_name")||"";document.getElementById("inp-style").value=localStorage.getItem("dw_style")||"";}
+document.getElementById("open-settings").addEventListener("click",function(){go("settings");});
+document.getElementById("close-settings").addEventListener("click",function(){go("main");});
+document.getElementById("close-draft").addEventListener("click",function(){go("main");});
+document.getElementById("btn-nl").addEventListener("click",function(){lang="nl-NL";document.getElementById("btn-nl").classList.add("active");document.getElementById("btn-en").classList.remove("active");});
+document.getElementById("btn-en").addEventListener("click",function(){lang="en-US";document.getElementById("btn-en").classList.add("active");document.getElementById("btn-nl").classList.remove("active");});
+document.getElementById("btn-save").addEventListener("click",function(){localStorage.setItem("dw_key",document.getElementById("inp-key").value.trim());localStorage.setItem("dw_name",document.getElementById("inp-name").value.trim());localStorage.setItem("dw_style",document.getElementById("inp-style").value.trim());toast("Saved!");setTimeout(function(){go("main");},800);});
+document.getElementById("start-over").addEventListener("click",function(){currentDraft=null;finalText="";document.getElementById("tbox").innerHTML="<span class=\"placeholder\" id=\"ph\">Your words will appear here...</span>";go("main");});
+document.getElementById("open-mail").addEventListener("click",function(){if(!currentDraft)return;window.location.href="mailto:?subject="+encodeURIComponent(currentDraft.subject)+"&body="+encodeURIComponent(currentDraft.body);});
+document.getElementById("mic-btn").addEventListener("click",function(){if(listening){stopMic();}else{startMic();}});
+function startMic(){
+  var key=localStorage.getItem("dw_key");
+  if(!key){toast("Add API key in Settings");go("settings");return;}
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast("Use Safari on iPhone");return;}
+  rec=new SR();rec.lang=lang;rec.continuous=true;rec.interimResults=true;
+  finalText="";
+  var box=document.getElementById("tbox");box.innerHTML="";box.classList.add("on");
+  rec.onresult=function(e){var interim="";for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal){finalText+=e.results[i][0].transcript+" ";}else{interim+=e.results[i][0].transcript;}}box.textContent=finalText+interim;};
+  rec.onerror=function(e){stopMic();toast("Mic error: "+e.error);};
+  rec.onend=function(){if(listening)rec.start();};
+  rec.start();listening=true;
+  document.getElementById("mic-btn").classList.add("on");
+  document.getElementById("mic-icon").textContent="⏹";
+  document.getElementById("status-label").textContent="Listening...";
+  document.getElementById("mic-hint").textContent="TAP TO STOP";
+  var ph=document.getElementById("ph");if(ph)ph.remove();
+}
+function stopMic(){
+  listening=false;if(rec){rec.stop();rec=null;}
+  document.getElementById("mic-btn").classList.remove("on");
+  document.getElementById("tbox").classList.remove("on");
+  document.getElementById("status-label").textContent="Tap to speak";
+  document.getElementById("mic-hint").textContent="TAP TO RECORD";
+  var t=finalText.trim();
+  if(t.length>3){makeDraft(t);}else{document.getElementById("mic-icon").textContent="🎙";document.getElementById("tbox").innerHTML="<span class=\"placeholder\" id=\"ph\">Your words will appear here...</span>";}
+}
+function makeDraft(text){
+  var key=localStorage.getItem("dw_key");
+  var name=localStorage.getItem("dw_name")||"";
+  var style=localStorage.getItem("dw_style")||"";
+  var btn=document.getElementById("mic-btn");
+  btn.classList.add("busy");
+  document.getElementById("mic-icon").textContent="⏳";
+  document.getElementById("status-label").textContent="Drafting...";
+  var sys="You are a bilingual email drafting assistant (Dutch and English).";
+  if(name)sys+=" The user is: "+name+".";
+  if(style)sys+=" Match this writing style:\n"+style;
+  sys+="\nDetect if the user spoke Dutch or English and write the email in that language. Return ONLY a raw JSON object with no markdown: {\"subject\":\"...\",\"body\":\"...\"}";
+  fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:1000,system:sys,messages:[{role:"user",content:text}]})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.error)throw new Error(data.error.message+" ("+data.error.type+")");
+    var raw=data.content[0].text.trim().replace(/```json|```/g,"").trim();
+    var d=JSON.parse(raw);
+    currentDraft={subject:d.subject,body:d.body};
+    document.getElementById("subj-val").textContent=d.subject;
+    document.getElementById("body-val").textContent=d.body;
+    go("draft");
+  })
+  .catch(function(err){document.getElementById("tbox").innerHTML="<div class=\"err\">"+err.message+"</div>";})
+  .finally(function(){btn.classList.remove("busy");document.getElementById("mic-icon").textContent="🎙";document.getElementById("status-label").textContent="Tap to speak";});
+}
 </script>
 </body>
 </html>
