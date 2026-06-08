@@ -635,7 +635,7 @@ The user will describe what they want to say in an email.
 
       const data = await response.json();
 
-      if (data.error) throw new Error(data.error.message);
+      if (data.error) throw new Error(JSON.stringify(data.error)); console.log('API response:', JSON.stringify(data).substring(0, 200));
 
       const raw = data.content[0].text.trim().replace(/```json|```/g, '').trim();
       const draft = JSON.parse(raw);
@@ -646,7 +646,7 @@ The user will describe what they want to say in an email.
       showScreen('draft');
 
     } catch (err) {
-      showToast('Error: ' + err.message, 4000);
+      const box = document.getElementById('transcript-box'); box.innerHTML = '<div style="background:rgba(255,71,71,0.1);border:1px solid rgba(255,71,71,0.3);border-radius:12px;padding:14px;color:#ff8080;font-size:13px">' + err.message + '<br>' + err.toString() + '</div>';
       console.error(err);
     } finally {
       btn.classList.remove('loading');
