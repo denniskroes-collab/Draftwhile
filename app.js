@@ -1,4 +1,4 @@
-var lang="nl-NL",listening=false,rec=null,currentDraft=null;
+var lang="nl-NL",listening=false,rec=null,currentDraft=null,savedText="";
 
 function go(id){
   var s=document.querySelectorAll(".screen");
@@ -31,7 +31,7 @@ document.getElementById("btn-save").addEventListener("click",function(){
   showToast("Saved!");setTimeout(function(){go("main");},800);
 });
 document.getElementById("start-over").addEventListener("click",function(){
-  currentDraft=null;
+  currentDraft=null;savedText="";
   document.getElementById("tbox").innerHTML='<span class="placeholder" id="ph">Your words will appear here...</span>';
   go("main");
 });
@@ -48,6 +48,7 @@ function startMic(){
   if(!key){showToast("Add API key in Settings");go("settings");return;}
   var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){showToast("Speech not supported");return;}
+  savedText="";
   listening=true;
   document.getElementById("mic-btn").classList.add("on");
   document.getElementById("mic-icon").textContent="⏹";
@@ -68,7 +69,9 @@ function startMic(){
       for(var i=0;i<e.results.length;i++){
         full+=e.results[i][0].transcript+" ";
       }
-      box.textContent=full.trim();
+      var t=full.trim();
+      savedText=t;
+      box.textContent=t;
     };
     rec.onerror=function(e){
       if(e.error==="no-speech"&&listening){setTimeout(startRec,200);return;}
@@ -83,14 +86,14 @@ function startMic(){
 }
 
 function stopMic(){
+  // Save text BEFORE stopping — Safari clears box on abort
+  var t=savedText.trim()||document.getElementById("tbox").textContent.trim();
   listening=false;
   if(rec){try{rec.abort();}catch(e){}rec=null;}
   document.getElementById("mic-btn").classList.remove("on");
   document.getElementById("tbox").classList.remove("on");
   document.getElementById("status-label").textContent="Tap to speak";
   document.getElementById("mic-hint").textContent="TAP TO RECORD";
-  // Read directly from the box - works regardless of isFinal in Safari
-  var t=document.getElementById("tbox").textContent.trim();
   if(t.length>3){
     makeDraft(t);
   } else {
