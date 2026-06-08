@@ -24,9 +24,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .lang-btn.active{background:var(--accent);color:#0a0a0f}
 .icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:6px;font-size:20px}
 #main{justify-content:space-between}
-.status-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;gap:24px}
+.status-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 24px;gap:16px}
 .status-label{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
-.transcript-box{width:100%;min-height:80px;max-height:160px;background:var(--surface);border-radius:var(--radius);padding:18px 20px;font-size:15px;line-height:1.6;color:var(--text);overflow-y:auto;border:1px solid rgba(255,255,255,0.06);transition:border-color 0.3s}
+.account-selector{width:100%;background:var(--surface);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.06);overflow:hidden}
+.account-selector select{width:100%;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:14px 16px;outline:none;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6b80' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+.account-selector select option{background:#1c1c28;color:#f0f0f8}
+.transcript-box{width:100%;min-height:80px;max-height:140px;background:var(--surface);border-radius:var(--radius);padding:18px 20px;font-size:15px;line-height:1.6;color:var(--text);overflow-y:auto;border:1px solid rgba(255,255,255,0.06);transition:border-color 0.3s}
 .transcript-box.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .placeholder{color:var(--muted);font-size:14px}
 .mic-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding-bottom:40px}
@@ -43,6 +46,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Syne',
 .field-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
 .field-value{font-size:15px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word}
 #subj-field .field-value{font-weight:600;font-size:16px}
+.from-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);background:rgba(232,255,71,0.1);border:1px solid rgba(232,255,71,0.2);border-radius:6px;padding:4px 10px;margin-bottom:12px}
 .draft-actions{padding:16px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
 .btn-primary{width:100%;padding:18px;background:var(--accent);color:#0a0a0f;border:none;border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer}
 .btn-secondary{width:100%;padding:16px;background:var(--surface2);color:var(--muted);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;cursor:pointer}
@@ -75,7 +79,16 @@ textarea.inp{resize:vertical;min-height:100px;line-height:1.5}
     <button class="icon-btn" id="open-settings">&#9881;</button>
   </div>
   <div class="status-area">
-    <div class="status-label" id="status-label">Tap to speak</div>
+    <div class="status-label" id="status-label">Select account &amp; tap to speak</div>
+    <div class="account-selector">
+      <select id="account-select">
+        <option value="d.kroes@inform.nl">Inform — d.kroes@inform.nl</option>
+        <option value="dkroes@aham.nl">Aham — dkroes@aham.nl</option>
+        <option value="backoffice@moovt.nl">Moovt — backoffice@moovt.nl</option>
+        <option value="dennis.kroes@draaijerpartners.nl">Draaijer — dennis.kroes@draaijerpartners.nl</option>
+        <option value="info@turbit.nl">Turbit — info@turbit.nl</option>
+      </select>
+    </div>
     <div class="transcript-box" id="tbox"><span class="placeholder" id="ph">Your words will appear here...</span></div>
   </div>
   <div class="mic-wrap">
@@ -89,6 +102,10 @@ textarea.inp{resize:vertical;min-height:100px;line-height:1.5}
     <button class="icon-btn" id="close-draft" style="font-size:16px">&#10005;</button>
   </div>
   <div class="draft-content">
+    <div class="draft-field">
+      <div class="field-label">From</div>
+      <div class="field-value" id="from-val" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:13px"></div>
+    </div>
     <div class="draft-field" id="subj-field">
       <div class="field-label">Subject</div>
       <div class="field-value" id="subj-val"></div>
@@ -99,7 +116,7 @@ textarea.inp{resize:vertical;min-height:100px;line-height:1.5}
     </div>
   </div>
   <div class="draft-actions">
-    <button class="btn-primary" id="open-mail">&#128232; Open in Mail</button>
+    <button class="btn-primary" id="open-mail">&#128232; Save to Drafts</button>
     <button class="btn-secondary" id="start-over">Start Over</button>
   </div>
 </div>
@@ -120,8 +137,8 @@ textarea.inp{resize:vertical;min-height:100px;line-height:1.5}
     <div>
       <div class="sec-title">Your Profile</div>
       <div class="card">
-        <div class="card-label">Your name and role</div>
-        <input type="text" class="inp" id="inp-name" placeholder="e.g. Dennis, Sales Director at Acme BV">
+        <div class="card-label">Your name and role (helps Claude write emails in context)</div>
+        <input type="text" class="inp" id="inp-name" placeholder="e.g. Dennis Kroes, Director">
       </div>
     </div>
     <div>
